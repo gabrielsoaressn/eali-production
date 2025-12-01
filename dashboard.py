@@ -15,7 +15,7 @@ st.set_page_config(
 @st.cache_resource
 def get_connection():
     return psycopg2.connect(
-        host="localhost",
+        host="38.52.130.145",
         database="metricsdb",
         user="metricsuser",
         password="metricspass"
