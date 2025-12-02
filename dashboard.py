@@ -14,12 +14,20 @@ st.set_page_config(
 # Database connection
 @st.cache_resource
 def get_connection():
-    return psycopg2.connect(
-        host="38.52.130.145",
-        database="metricsdb",
-        user="metricsuser",
-        password="metricspass"
-    )
+    try:
+        # Try to get credentials from Streamlit secrets
+        return psycopg2.connect(
+            host=st.secrets["connections"]["postgresql"]["host"],
+            database=st.secrets["connections"]["postgresql"]["database"],
+            user=st.secrets["connections"]["postgresql"]["user"],
+            password=st.secrets["connections"]["postgresql"]["password"],
+            port=st.secrets["connections"]["postgresql"].get("port", 5432)
+        )
+    except Exception as e:
+        # Fallback for local development (if .streamlit/secrets.toml exists locally)
+        st.error(f"Erro ao conectar: {e}")
+        st.info("Configure os secrets no Streamlit Cloud: Settings → Secrets")
+        raise
 
 @st.cache_data(ttl=300)
 def load_tasks():
