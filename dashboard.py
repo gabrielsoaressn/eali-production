@@ -199,6 +199,112 @@ with col2:
 
 st.markdown("---")
 
+# Employee analytics section
+st.header("📈 Análise por Funcionário")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("Tarefas por Funcionário")
+    # Filter out null assignees
+    df_with_assignee = df_filtered[df_filtered['assignee_name'].notna()]
+    if not df_with_assignee.empty:
+        employee_counts = df_with_assignee['assignee_name'].value_counts().reset_index()
+        employee_counts.columns = ['Funcionário', 'Total de Tarefas']
+        fig_employee = px.bar(
+            employee_counts.head(10),
+            x='Funcionário',
+            y='Total de Tarefas',
+            color='Total de Tarefas',
+            color_continuous_scale='Blues',
+            text='Total de Tarefas'
+        )
+        fig_employee.update_traces(textposition='outside')
+        fig_employee.update_layout(height=400, showlegend=False)
+        st.plotly_chart(fig_employee, use_container_width=True)
+    else:
+        st.info("Sem dados de funcionários disponíveis")
+
+with col2:
+    st.subheader("Taxa de Conclusão por Funcionário")
+    if not df_with_assignee.empty:
+        employee_completion = df_with_assignee.groupby('assignee_name').agg({
+            'done': ['sum', 'count']
+        }).reset_index()
+        employee_completion.columns = ['Funcionário', 'Concluídas', 'Total']
+        employee_completion['Taxa (%)'] = (employee_completion['Concluídas'] / employee_completion['Total'] * 100).round(1)
+        employee_completion = employee_completion.sort_values('Taxa (%)', ascending=True).head(10)
+
+        fig_completion = px.bar(
+            employee_completion,
+            y='Funcionário',
+            x='Taxa (%)',
+            orientation='h',
+            color='Taxa (%)',
+            color_continuous_scale='Greens',
+            text='Taxa (%)'
+        )
+        fig_completion.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig_completion.update_layout(height=400, showlegend=False)
+        st.plotly_chart(fig_completion, use_container_width=True)
+    else:
+        st.info("Sem dados de conclusão disponíveis")
+
+st.markdown("---")
+
+# Employee status breakdown
+st.subheader("Status das Tarefas por Funcionário")
+if not df_with_assignee.empty:
+    employee_status = df_with_assignee.groupby(['assignee_name', 'status']).size().reset_index(name='Quantidade')
+
+    # Get top 10 employees by total tasks
+    top_employees = df_with_assignee['assignee_name'].value_counts().head(10).index.tolist()
+    employee_status_filtered = employee_status[employee_status['assignee_name'].isin(top_employees)]
+
+    if not employee_status_filtered.empty:
+        fig_status_employee = px.bar(
+            employee_status_filtered,
+            x='assignee_name',
+            y='Quantidade',
+            color='status',
+            title='Distribuição de Status (Top 10 Funcionários)',
+            labels={'assignee_name': 'Funcionário', 'Quantidade': 'Número de Tarefas'},
+            color_discrete_sequence=px.colors.qualitative.Set2
+        )
+        fig_status_employee.update_layout(height=400)
+        st.plotly_chart(fig_status_employee, use_container_width=True)
+    else:
+        st.info("Sem dados de status por funcionário disponíveis")
+else:
+    st.info("Sem dados de funcionários disponíveis")
+
+st.markdown("---")
+
+# Ranking table
+st.subheader("🏆 Ranking de Produtividade")
+if not df_with_assignee.empty:
+    ranking = df_with_assignee.groupby('assignee_name').agg({
+        'task_id': 'count',
+        'done': 'sum'
+    }).reset_index()
+    ranking.columns = ['Funcionário', 'Total de Tarefas', 'Tarefas Concluídas']
+    ranking['Pendentes'] = ranking['Total de Tarefas'] - ranking['Tarefas Concluídas']
+    ranking['Taxa de Conclusão (%)'] = (ranking['Tarefas Concluídas'] / ranking['Total de Tarefas'] * 100).round(1)
+    ranking = ranking.sort_values('Tarefas Concluídas', ascending=False)
+
+    # Add ranking position
+    ranking.insert(0, 'Posição', range(1, len(ranking) + 1))
+
+    st.dataframe(
+        ranking,
+        use_container_width=True,
+        hide_index=True
+    )
+else:
+    st.info("Sem dados de funcionários disponíveis")
+
+st.markdown("---")
+
 # Recent tasks table
 st.subheader("Tarefas Recentes")
 recent_tasks = df_filtered[['title', 'status', 'done', 'created_at']].sort_values('created_at', ascending=False).head(15)
