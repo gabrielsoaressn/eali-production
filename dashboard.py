@@ -48,6 +48,19 @@ st.markdown("---")
 # Load data
 try:
     df_tasks = load_tasks()
+
+    # DEBUG: Mostrar estatísticas dos dados
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Debug Info")
+    st.sidebar.write(f"Total de tarefas: {len(df_tasks)}")
+    st.sidebar.write(f"Tarefas com assignee: {df_tasks['assignee_name'].notna().sum()}")
+    st.sidebar.write(f"Assignees únicos: {df_tasks['assignee_name'].nunique()}")
+
+    # Mostrar alguns assignee_names
+    if df_tasks['assignee_name'].notna().any():
+        st.sidebar.write("Funcionários encontrados:")
+        st.sidebar.write(df_tasks['assignee_name'].value_counts().head(5))
+
 except Exception as e:
     st.error(f"Erro ao conectar ao banco de dados: {e}")
     st.stop()
